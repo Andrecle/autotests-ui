@@ -1,5 +1,5 @@
 from playwright.sync_api import Page, expect
-
+import allure
 from pages.base_page import BasePage
 from components.navigation.navbar_component import NavbarComponent
 from components.navigation.sidebar_component import SidebarComponent
@@ -16,8 +16,6 @@ class CoursesListPage(BasePage):
         self.empty_view = EmptyViewComponent(page, 'courses-list')
         self.toolbar_view = CoursesListToolbarViewComponent(page,"courses-list")
         self.course_view = CourseViewComponent(page)
-
-
 
     def check_visible_empty_view(self):
         self.empty_view.check_visible(
