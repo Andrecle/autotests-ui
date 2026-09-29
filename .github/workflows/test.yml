@@ -75,25 +75,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Скачиваем ТОЛЬКО основной код репозитория (по умолчанию main)
       - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-          path: gh-pages
 
+      # Скачиваем сохраненные результаты тестов из первой джобы
       - name: Download Allure results
         uses: actions/download-artifact@v4
         with:
           name: allure-results
           path: allure-results
 
+      # Генерируем Allure Report. Передаем токен, чтобы экшен сам забрал историю из gh-pages
       - name: Generates Allure Report with history
         uses: mgrybyk-org/allure-report-branch-js-action@v1
         if: always()
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }} # Даем доступ к гит-веткам
           allure_results: allure-results
           allure_history: allure-history
 
+      # Публикуем готовый отчет в GitHub Pages
       - name: Deploy report to Github Pages
         if: always()
         uses: peaceiris/actions-gh-pages@v4
