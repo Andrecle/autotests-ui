@@ -75,31 +75,46 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Скачиваем ТОЛЬКО основной код репозитория (по умолчанию main)
+      # 1. Скачиваем основной код проекта
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # Скачиваем сохраненные результаты тестов из первой джобы
+      # 2. Выкачиваем ветку деплоя gh-pages в отдельную папку (продолжаем при ошибке, если ветки еще нет)
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        if: always()
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages-dir # Скачается в папку gh-pages-dir
+
+      # 3. Скачиваем сгенерированные результаты тестов из первой джобы
       - name: Download Allure results
         uses: actions/download-artifact@v4
         with:
           name: allure-results
           path: allure-results
 
-      # Генерируем Allure Report. Передаем токен, чтобы экшен сам забрал историю из gh-pages
+      # 4. Устанавливаем Java (она строго обязательна для работы этого экшена)
+      - name: Set up JDK
+        uses: actions/setup-python@v4 # (вы можете использовать setup-java, ubuntu-latest уже имеет Java, но лучше настроить явно)
+        # На ubuntu-latest обычно Java уже есть, но если что, экшен её подхватит.
+
+      # 5. Генерируем Allure Report с правильными параметрами для mgrybyk экшена
       - name: Generates Allure Report with history
         uses: mgrybyk-org/allure-report-branch-js-action@v1
         if: always()
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }} # Даем доступ к гит-веткам
-          allure_results: allure-results
-          allure_history: allure-history
+          report_dir: allure-results   # Папка с результатами тестов
+          gh_pages: gh-pages-dir       # Папка, куда мы сделали checkout ветки gh-pages
+          report_id: allure-report     # Название подпапки для отчета
 
-      # Публикуем готовый отчет в GitHub Pages
+      # 6. Публикуем сгенерированный отчет в GitHub Pages
       - name: Deploy report to Github Pages
         if: always()
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: ./allure-history
+          # Экшен mgrybyk обновляет файлы прямо внутри папки, которую мы ему передали (gh-pages-dir)
+          publish_dir: ./gh-pages-dir
